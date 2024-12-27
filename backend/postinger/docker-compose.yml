@@ -1,0 +1,13 @@
+services:
+  mysql:
+    image: mysql:9.1.0
+    environment:
+      MYSQL_DATABASE: postinger
+      MYSQL_ROOT_PASSWORD: root@100
+    ports:
+      - "3306:3306"
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025" # Web UI for viewing emails
