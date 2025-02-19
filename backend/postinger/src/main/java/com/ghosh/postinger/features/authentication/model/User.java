@@ -2,6 +2,8 @@ package com.ghosh.postinger.features.authentication.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import com.ghosh.postinger.features.feed.model.Post;
+import com.ghosh.postinger.features.notifications.model.Notification;
+
 //import com.ghosh.postinger.features.messaging.model.Conversation;
 //import com.ghosh.postinger.backend.features.notifications.model.Notification;
 import jakarta.persistence.*;
@@ -12,7 +14,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity(name = "users")
-public class AuthenticationUser {
+public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -37,14 +39,13 @@ public class AuthenticationUser {
     private Boolean profileComplete = false;
 
 
-//    @JsonIgnore
-//    @OneToMany(mappedBy = "recipient", cascade = CascadeType.ALL, orphanRemoval = true)
-//    private List<Notification> receivedNotifications;
-//
-//    @JsonIgnore
-//    @OneToMany(mappedBy = "actor", cascade = CascadeType.ALL, orphanRemoval = true)
-//    private List<Notification> actedNotifications;
-//
+   @JsonIgnore
+   @OneToMany(mappedBy = "recipient", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Notification> receivedNotifications;
+
+   @JsonIgnore
+    @OneToMany(mappedBy = "actor", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Notification> actedNotifications;
     @JsonIgnore
     @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Post> posts;
@@ -59,12 +60,12 @@ public class AuthenticationUser {
 //    private List<Conversation> conversationsAsRecipient;
 
 
-    public AuthenticationUser(String email, String password) {
+    public User(String email, String password) {
         this.email = email;
         this.password = password;
     }
 
-    public AuthenticationUser() {
+    public User() {
     }
 
     public Boolean getEmailVerified() {
@@ -192,21 +193,21 @@ public class AuthenticationUser {
         this.profilePicture = profilePicture;
     }
 
-//    public List<Notification> getReceivedNotifications() {
-//        return receivedNotifications;
-//    }
-//
-//    public void setReceivedNotifications(List<Notification> receivedNotifications) {
-//        this.receivedNotifications = receivedNotifications;
-//    }
-//
-//    public List<Notification> getActedNotifications() {
-//        return actedNotifications;
-//    }
-//
-//    public void setActedNotifications(List<Notification> actedNotifications) {
-//        this.actedNotifications = actedNotifications;
-//    }
+    public List<Notification> getReceivedNotifications() {
+        return receivedNotifications;
+    }
+
+    public void setReceivedNotifications(List<Notification> receivedNotifications) {
+        this.receivedNotifications = receivedNotifications;
+    }
+
+    public List<Notification> getActedNotifications() {
+        return actedNotifications;
+    }
+
+    public void setActedNotifications(List<Notification> actedNotifications) {
+        this.actedNotifications = actedNotifications;
+    }
 //
 //    public List<Conversation> getConversationsAsAuthor() {
 //        return conversationsAsAuthor;

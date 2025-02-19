@@ -1,7 +1,7 @@
 package com.ghosh.postinger.features.authentication.filter;
 
 
-import com.ghosh.postinger.features.authentication.model.AuthenticationUser;
+import com.ghosh.postinger.features.authentication.model.User;
 import com.ghosh.postinger.features.authentication.service.AuthenticationService;
 import com.ghosh.postinger.features.authentication.utils.JsonWebToken;
 
@@ -65,7 +65,7 @@ public class AuthenticationFilter extends HttpFilter {
             }
 
             String email = jsonWebTokenService.getEmailFromToken(token);
-            AuthenticationUser user = authenticationService.getUser(email);
+            User user = authenticationService.getUser(email);
             request.setAttribute("authenticatedUser", user);
             chain.doFilter(request, response);
         } catch (Exception e) {

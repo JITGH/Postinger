@@ -1,39 +1,29 @@
 package com.ghosh.postinger.features.authentication.service;
 
 
-
-
-
-import org.springframework.stereotype.Service;
-
-
 import com.ghosh.postinger.features.authentication.dto.AuthenticationRequestBody;
 import com.ghosh.postinger.features.authentication.dto.AuthenticationResponseBody;
-import com.ghosh.postinger.features.authentication.model.AuthenticationUser;
-import com.ghosh.postinger.features.authentication.repository.AuthenticationUserRepository;
+import com.ghosh.postinger.features.authentication.model.User;
+import com.ghosh.postinger.features.authentication.repository.UserRepository;
 import com.ghosh.postinger.features.authentication.utils.EmailService;
 import com.ghosh.postinger.features.authentication.utils.Encoder;
 import com.ghosh.postinger.features.authentication.utils.JsonWebToken;
-
-
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-
-
 @Service
 public class AuthenticationService {
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
-    private final AuthenticationUserRepository authenticationUserRepository;
+    private final UserRepository userRepository;
     private final int durationInMinutes = 1;
 
     private final Encoder encoder;
@@ -43,8 +33,9 @@ public class AuthenticationService {
     @PersistenceContext
     private EntityManager entityManager;
 
-    public AuthenticationService(AuthenticationUserRepository authenticationUserRepository, Encoder encoder, JsonWebToken jsonWebToken, EmailService emailService) {
-        this.authenticationUserRepository = authenticationUserRepository;
+    public AuthenticationService(UserRepository userRepository, Encoder encoder,
+                                 JsonWebToken jsonWebToken, EmailService emailService) {
+        this.userRepository = userRepository;
         this.encoder = encoder;
         this.jsonWebToken = jsonWebToken;
         this.emailService = emailService;
@@ -60,16 +51,18 @@ public class AuthenticationService {
     }
 
     public void sendEmailVerificationToken(String email) {
-        Optional<AuthenticationUser> user = authenticationUserRepository.findByEmail(email);
-        if (user.isPresent() && !user.get().getEmailVerified()) {
+        Optional<User> user = userRepository.findByEmail(email);
+        boolean isEmailVerified = user.isPresent() && !user.get().getEmailVerified();
+        if (isEmailVerified) {
             String emailVerificationToken = generateEmailVerificationToken();
             String hashedToken = encoder.encode(emailVerificationToken);
             user.get().setEmailVerificationToken(hashedToken);
             user.get().setEmailVerificationTokenExpiryDate(LocalDateTime.now().plusMinutes(durationInMinutes));
-            authenticationUserRepository.save(user.get());
+            userRepository.save(user.get());
             String subject = "Email Verification";
-            String body = String.format("Only one step to take full advantage of LinkedIn.\n\n"
-                            + "Enter this code to verify your email: " + "%s\n\n" + "The code will expire in " + "%s" + " minutes.",
+            String body = String.format("Only one step to take full advantage of Postinger.\n\n"
+                            + "Enter this code to verify your email: " + "%s\n\n" + "The code will expire in " + "%s"
+                            + " minutes.",
                     emailVerificationToken, durationInMinutes);
             try {
                 emailService.sendEmail(email, subject, body);
@@ -82,13 +75,15 @@ public class AuthenticationService {
     }
 
     public void validateEmailVerificationToken(String token, String email) {
-        Optional<AuthenticationUser> user = authenticationUserRepository.findByEmail(email);
-        if (user.isPresent() && encoder.matches(token, user.get().getEmailVerificationToken()) && !user.get().getEmailVerificationTokenExpiryDate().isBefore(LocalDateTime.now())) {
+        Optional<User> user = userRepository.findByEmail(email);
+        if (user.isPresent() && encoder.matches(token, user.get().getEmailVerificationToken())
+                && !user.get().getEmailVerificationTokenExpiryDate().isBefore(LocalDateTime.now())) {
             user.get().setEmailVerified(true);
             user.get().setEmailVerificationToken(null);
             user.get().setEmailVerificationTokenExpiryDate(null);
-            authenticationUserRepository.save(user.get());
-        } else if (user.isPresent() && encoder.matches(token, user.get().getEmailVerificationToken()) && user.get().getEmailVerificationTokenExpiryDate().isBefore(LocalDateTime.now())) {
+            userRepository.save(user.get());
+        } else if (user.isPresent() && encoder.matches(token, user.get().getEmailVerificationToken())
+                && user.get().getEmailVerificationTokenExpiryDate().isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Email verification token expired.");
         } else {
             throw new IllegalArgumentException("Email verification token failed.");
@@ -96,7 +91,8 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponseBody login(AuthenticationRequestBody loginRequestBody) {
-        AuthenticationUser user = authenticationUserRepository.findByEmail(loginRequestBody.getEmail()).orElseThrow(() -> new IllegalArgumentException("User not found."));
+        User user = userRepository.findByEmail(loginRequestBody.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
         if (!encoder.matches(loginRequestBody.getPassword(), user.getPassword())) {
             throw new IllegalArgumentException("Password is incorrect.");
         }
@@ -105,18 +101,19 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponseBody register(AuthenticationRequestBody registerRequestBody) {
-        AuthenticationUser user = authenticationUserRepository.save(new AuthenticationUser(registerRequestBody.getEmail(), encoder.encode(registerRequestBody.getPassword())));
+        User user = userRepository.save(new User(
+                registerRequestBody.getEmail(), encoder.encode(registerRequestBody.getPassword())));
 
         String emailVerificationToken = generateEmailVerificationToken();
         String hashedToken = encoder.encode(emailVerificationToken);
         user.setEmailVerificationToken(hashedToken);
         user.setEmailVerificationTokenExpiryDate(LocalDateTime.now().plusMinutes(durationInMinutes));
 
-        authenticationUserRepository.save(user);
+        userRepository.save(user);
 
         String subject = "Email Verification";
         String body = String.format("""
-                        Only one step to take full advantage of LinkedIn.
+                        Only one step to take full advantage of Postinger.
                         
                         Enter this code to verify your email: %s. The code will expire in %s minutes.""",
                 emailVerificationToken, durationInMinutes);
@@ -129,13 +126,14 @@ public class AuthenticationService {
         return new AuthenticationResponseBody(authToken, "User registered successfully.");
     }
 
-    public AuthenticationUser getUser(String email) {
-        return authenticationUserRepository.findByEmail(email).orElseThrow(() -> new IllegalArgumentException("User not found."));
+    public User getUser(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
     }
 
     @Transactional
     public void deleteUser(Long userId) {
-        AuthenticationUser user = entityManager.find(AuthenticationUser.class, userId);
+        User user = entityManager.find(User.class, userId);
         if (user != null) {
             entityManager.createNativeQuery("DELETE FROM posts_likes WHERE user_id = :userId")
                     .setParameter("userId", userId)
@@ -145,13 +143,13 @@ public class AuthenticationService {
     }
 
     public void sendPasswordResetToken(String email) {
-        Optional<AuthenticationUser> user = authenticationUserRepository.findByEmail(email);
+        Optional<User> user = userRepository.findByEmail(email);
         if (user.isPresent()) {
             String passwordResetToken = generateEmailVerificationToken();
             String hashedToken = encoder.encode(passwordResetToken);
             user.get().setPasswordResetToken(hashedToken);
             user.get().setPasswordResetTokenExpiryDate(LocalDateTime.now().plusMinutes(durationInMinutes));
-            authenticationUserRepository.save(user.get());
+            userRepository.save(user.get());
             String subject = "Password Reset";
             String body = String.format("""
                             You requested a password reset.
@@ -169,36 +167,48 @@ public class AuthenticationService {
     }
 
     public void resetPassword(String email, String newPassword, String token) {
-        Optional<AuthenticationUser> user = authenticationUserRepository.findByEmail(email);
-        if (user.isPresent() && encoder.matches(token, user.get().getPasswordResetToken()) && !user.get().getPasswordResetTokenExpiryDate().isBefore(LocalDateTime.now())) {
+        Optional<User> user = userRepository.findByEmail(email);
+        if (user.isPresent() && encoder.matches(token, user.get().getPasswordResetToken())
+                && !user.get().getPasswordResetTokenExpiryDate().isBefore(LocalDateTime.now())) {
             user.get().setPasswordResetToken(null);
             user.get().setPasswordResetTokenExpiryDate(null);
             user.get().setPassword(encoder.encode(newPassword));
-            authenticationUserRepository.save(user.get());
-        } else if (user.isPresent() && encoder.matches(token, user.get().getPasswordResetToken()) && user.get().getPasswordResetTokenExpiryDate().isBefore(LocalDateTime.now())) {
+            userRepository.save(user.get());
+        } else if (user.isPresent() && encoder.matches(token, user.get().getPasswordResetToken())
+                && user.get().getPasswordResetTokenExpiryDate().isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Password reset token expired.");
         } else {
             throw new IllegalArgumentException("Password reset token failed.");
         }
     }
 
+    public User updateUserProfile(Long userId, String firstName, String lastName, String company,
+                                  String position, String location, String profilePicture) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (firstName != null)
+            user.setFirstName(firstName);
+        if (lastName != null)
+            user.setLastName(lastName);
+        if (company != null)
+            user.setCompany(company);
+        if (position != null)
+            user.setPosition(position);
+        if (location != null)
+            user.setLocation(location);
+        if (profilePicture != null)
+            user.setProfilePicture(profilePicture);
+        
 
-    public AuthenticationUser updateUserProfile(Long userId, String firstName, String lastName, String company, String position, String location) {
-        AuthenticationUser user = authenticationUserRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
-        if (firstName != null) user.setFirstName(firstName);
-        if (lastName != null) user.setLastName(lastName);
-        if (company != null) user.setCompany(company);
-        if (position != null) user.setPosition(position);
-        if (location != null) user.setLocation(location);
-        return authenticationUserRepository.save(user);
+        return userRepository.save(user);
     }
 
-
-    public List<AuthenticationUser> getUsersWithoutAuthenticated(AuthenticationUser user) {
-        return authenticationUserRepository.findAllByIdNot(user.getId());
+    public List<User> getUsersWithoutAuthenticated(User user) {
+        return userRepository.findAllByIdNot(user.getId());
     }
 
-    public AuthenticationUser getUserById(Long receiverId) {
-        return authenticationUserRepository.findById(receiverId).orElseThrow(() -> new IllegalArgumentException("User not found."));
+    public User getUserById(Long receiverId) {
+        return userRepository.findById(receiverId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
     }
 }

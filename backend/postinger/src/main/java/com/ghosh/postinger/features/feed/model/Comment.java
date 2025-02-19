@@ -3,7 +3,7 @@ package com.ghosh.postinger.features.feed.model;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.ghosh.postinger.features.authentication.model.AuthenticationUser;
+import com.ghosh.postinger.features.authentication.model.User;
 
 import java.time.LocalDateTime;
 
@@ -19,7 +19,7 @@ public class Comment {
     private Post post;
     @ManyToOne
     @JoinColumn(name = "author_id", nullable = false)
-    private AuthenticationUser author;
+    private User author;
     @Column(nullable = false)
     private String content;
 
@@ -31,7 +31,7 @@ public class Comment {
     public Comment() {
     }
 
-    public Comment(Post post, AuthenticationUser author, String content) {
+    public Comment(Post post,User author, String content) {
         this.post = post;
         this.author = author;
         this.content = content;
@@ -59,11 +59,11 @@ public class Comment {
         this.post = post;
     }
 
-    public AuthenticationUser getAuthor() {
+    public User getAuthor() {
         return author;
     }
 
-    public void setAuthor(AuthenticationUser author) {
+    public void setAuthor(User author) {
         this.author = author;
     }
 

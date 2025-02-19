@@ -6,16 +6,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import com.ghosh.postinger.dto.Response;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestAttribute;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.ghosh.postinger.features.authentication.dto.AuthenticationRequestBody;
 import com.ghosh.postinger.features.authentication.dto.AuthenticationResponseBody;
-import com.ghosh.postinger.features.authentication.model.AuthenticationUser;
+import com.ghosh.postinger.features.authentication.model.User;
 
 import com.ghosh.postinger.features.authentication.service.AuthenticationService;
 
@@ -41,24 +34,24 @@ public class AuthenticationController {
     }
 
     @DeleteMapping("/delete")
-    public Response deleteUser(@RequestAttribute("authenticatedUser") AuthenticationUser user) {
+    public Response deleteUser(@RequestAttribute("authenticatedUser") User user) {
         authenticationUserService.deleteUser(user.getId());
         return new Response("User deleted successfully.");
     }
 
     @GetMapping("/user")
-    public AuthenticationUser getUser(@RequestAttribute("authenticatedUser") AuthenticationUser user) {
+    public User getUser(@RequestAttribute("authenticatedUser") User user) {
         return user;
     }
 
     @PutMapping("/validate-email-verification-token")
-    public Response verifyEmail(@RequestParam String token, @RequestAttribute("authenticatedUser") AuthenticationUser user) {
+    public Response verifyEmail(@RequestParam String token, @RequestAttribute("authenticatedUser") User user) {
         authenticationUserService.validateEmailVerificationToken(token, user.getEmail());
         return new Response("Email verified successfully.");
     }
 
     @GetMapping("/send-email-verification-token")
-    public Response sendEmailVerificationToken(@RequestAttribute("authenticatedUser") AuthenticationUser user) {
+    public Response sendEmailVerificationToken(@RequestAttribute("authenticatedUser") User user) {
         authenticationUserService.sendEmailVerificationToken(user.getEmail());
         return new Response("Email verification token sent successfully.");
     }
@@ -76,25 +69,26 @@ public class AuthenticationController {
     }
 
     @PutMapping("/profile/{id}")
-    public AuthenticationUser updateUserProfile(
-            @RequestAttribute("authenticatedUser") AuthenticationUser user,
+    public User updateUserProfile(
+            @RequestAttribute("authenticatedUser") User user,
             @PathVariable Long id,
             @RequestParam(required = false) String firstName,
             @RequestParam(required = false) String lastName,
             @RequestParam(required = false) String company,
             @RequestParam(required = false) String position,
-            @RequestParam(required = false) String location) {
+            @RequestParam(required = false) String location,
+             @RequestParam(required = false) String profilePicture) {
 
         if (!user.getId().equals(id)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User does not have permission to update this profile.");
         }
 
-        return authenticationUserService.updateUserProfile(id, firstName, lastName, company, position, location);
+        return authenticationUserService.updateUserProfile(id, firstName, lastName, company, position, location, profilePicture);
     }
 
 
     @GetMapping("/users")
-    public List<AuthenticationUser> getUsersWithoutAuthenticated(@RequestAttribute("authenticatedUser") AuthenticationUser user) {
+    public List<User> getUsersWithoutAuthenticated(@RequestAttribute("authenticatedUser") User user) {
         return authenticationUserService.getUsersWithoutAuthenticated(user);
     }
 }

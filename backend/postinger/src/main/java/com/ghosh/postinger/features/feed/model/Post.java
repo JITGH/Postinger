@@ -1,6 +1,6 @@
 package com.ghosh.postinger.features.feed.model;
 import jakarta.persistence.PreUpdate;
-import com.ghosh.postinger.features.authentication.model.AuthenticationUser;
+import com.ghosh.postinger.features.authentication.model.User;
 import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,7 +30,7 @@ public class Post {
     private String picture;
     @ManyToOne
     @JoinColumn(name = "author_id", nullable = false)
-    private AuthenticationUser author;
+    private User author;
     @JsonIgnore
     @ManyToMany
     @JoinTable(
@@ -38,7 +38,7 @@ public class Post {
             joinColumns = @JoinColumn(name = "post_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id")
     )
-    private Set<AuthenticationUser> likes;
+    private Set<User> likes;
     @JsonIgnore
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments;
@@ -47,7 +47,7 @@ public class Post {
 
     private LocalDateTime updatedDate;
 
-    public Post(String content, AuthenticationUser author) {
+    public Post(String content, User author) {
         this.content = content;
         this.author = author;
     }
@@ -76,19 +76,19 @@ public class Post {
         this.content = content;
     }
 
-    public AuthenticationUser getAuthor() {
+    public User getAuthor() {
         return author;
     }
 
-    public void setAuthor(AuthenticationUser author) {
+    public void setAuthor(User author) {
         this.author = author;
     }
 
-    public Set<AuthenticationUser> getLikes() {
+    public Set<User> getLikes() {
         return likes;
     }
 
-    public void setLikes(Set<AuthenticationUser> likes) {
+    public void setLikes(Set<User> likes) {
         this.likes = likes;
     }
 

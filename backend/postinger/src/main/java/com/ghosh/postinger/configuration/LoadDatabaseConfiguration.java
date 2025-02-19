@@ -2,8 +2,8 @@ package com.ghosh.postinger.configuration;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import com.ghosh.postinger.features.authentication.model.AuthenticationUser;
-import com.ghosh.postinger.features.authentication.repository.AuthenticationUserRepository;
+import com.ghosh.postinger.features.authentication.model.User;
+import com.ghosh.postinger.features.authentication.repository.UserRepository;
 import com.ghosh.postinger.features.authentication.utils.Encoder;
 import com.ghosh.postinger.features.feed.model.Post;
 import com.ghosh.postinger.features.feed.repository.PostRepository;
@@ -20,15 +20,15 @@ public class LoadDatabaseConfiguration {
     }
 
     @Bean
-    public CommandLineRunner initDatabase(AuthenticationUserRepository authenticationUserRepository, PostRepository postRepository) {
+    public CommandLineRunner initDatabase(UserRepository authenticationUserRepository, PostRepository postRepository) {
         return args -> {
-            List<AuthenticationUser> users = createUsers(authenticationUserRepository);
+            List<User> users = createUsers(authenticationUserRepository);
             createPosts(postRepository, users);
         };
     }
 
-    private List<AuthenticationUser> createUsers(AuthenticationUserRepository authenticationUserRepository) {
-        List<AuthenticationUser> users = List.of(
+    private List<User> createUsers(UserRepository authenticationUserRepository) {
+        List<User> users = List.of(
                 createUser("john.doe@example.com", "john", "John", "Doe", "Software Engineer", "Docker Inc.", "San Francisco, CA",
                         "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=3560&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"),
                 createUser("anne.claire@example.com", "anne", "Anne", "Claire", "HR Manager", "eToro", "Paris, Fr",
@@ -45,9 +45,9 @@ public class LoadDatabaseConfiguration {
         return users;
     }
 
-    private AuthenticationUser createUser(String email, String password, String firstName, String lastName, String position,
+    private User createUser(String email, String password, String firstName, String lastName, String position,
                                           String company, String location, String profilePicture) {
-        AuthenticationUser user = new AuthenticationUser(email, encoder.encode(password));
+        User user = new User(email, encoder.encode(password));
         user.setEmailVerified(true);
         user.setFirstName(firstName);
         user.setLastName(lastName);
@@ -58,7 +58,7 @@ public class LoadDatabaseConfiguration {
         return user;
     }
 
-    private void createPosts(PostRepository postRepository, List<AuthenticationUser> users) {
+    private void createPosts(PostRepository postRepository, List<User> users) {
         Random random = new Random();
         for (int j = 1; j <= 10; j++) {
             Post post = new Post("Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
@@ -71,8 +71,8 @@ public class LoadDatabaseConfiguration {
         }
     }
 
-    private HashSet<AuthenticationUser> generateLikes(List<AuthenticationUser> users, int postNumber, Random random) {
-        HashSet<AuthenticationUser> likes = new HashSet<>();
+    private HashSet<User> generateLikes(List<User> users, int postNumber, Random random) {
+        HashSet<User> likes = new HashSet<>();
 
         if (postNumber == 1) {
             while (likes.size() < 3) {
